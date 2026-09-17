@@ -1,0 +1,11 @@
+{
+  "name": "chrome-bible-meditation",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Chrome Side Panel Bible Meditation Companion extension",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "author": "MS_Dev",
+  "license": "MIT"
+}
