@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>성서 묵상 동반자</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-brand">
+      <span class="brand-icon">📖</span>
+      <div class="brand-text">
+        <h1 class="brand-title">성서 묵상 동반자</h1>
+        <span class="brand-subtitle">Bible Meditation Companion</span>
+      </div>
+    </div>
+    <div class="auth-area" id="authArea">
+      <button type="button" class="btn btn-auth" id="btnLogin">Google 로그인</button>
+      <div class="user-badge hidden" id="userBadge">
+        <span class="user-email" id="userEmail"></span>
+        <button type="button" class="btn btn-icon" id="btnLogout" title="로그아웃">✕</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- 섹션 1: 본문 및 1차 초안 묵상 메모 -->
+    <section class="card section-draft" id="sectionDraft">
+      <div class="card-header">
+        <span class="step-badge">1</span>
+        <h2>성경 본문 및 1차 초안 메모</h2>
+      </div>
+
+      <div class="form-row book-chap-row">
+        <div class="form-group flex-1">
+          <label for="inputBook">성경 약어 (Book)</label>
+          <input type="text" id="inputBook" placeholder="예: Lev, Gen, Rom" spellcheck="false" autocomplete="off">
+        </div>
+        <div class="form-group flex-1">
+          <label for="inputChapter">장 (Chapter)</label>
+          <input type="text" id="inputChapter" placeholder="예: 18" spellcheck="false" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="inputScripture">성경 본문 구절 (붙여넣기)</label>
+        <textarea id="inputScripture" rows="4" placeholder="성경 사이트에서 읽은 구절을 붙여넣으세요..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="inputDraft">1차 초안 묵상 메모 (자유 기록)</label>
+        <textarea id="inputDraft" rows="5" placeholder="떠오른 거친 생각, 의문, 초기 묵상을 자유롭게 기록하세요..."></textarea>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="btn btn-primary" id="btnStartDialogue">
+          <span class="btn-icon">🎭</span> 돈 까밀로와 대화 시작
+        </button>
+      </div>
+    </section>
+
+    <!-- 섹션 2: 돈 까밀로의 신학적 대화 피드 -->
+    <section class="card section-dialogue hidden" id="sectionDialogue">
+      <div class="card-header">
+        <span class="step-badge">2</span>
+        <h2>돈 까밀로와의 신학적 대화</h2>
+        <span class="card-hint">형식적 칭찬 없는 도전적 질문</span>
+      </div>
+
+      <div class="dialogue-feed" id="dialogueFeed">
+        <!-- 대화 말풍선이 동적으로 추가됩니다 -->
+      </div>
+
+      <div class="dialogue-input-area" id="dialogueInputArea">
+        <textarea id="inputUserReply" rows="2" placeholder="돈 까밀로의 질문에 당신의 생각을 답하세요..."></textarea>
+        <div class="dialogue-btn-row">
+          <button type="button" class="btn btn-secondary" id="btnSendReply">답변 전송</button>
+          <button type="button" class="btn btn-success" id="btnSynthesizeEssay">
+            <span class="btn-icon">✍️</span> 에세이 종합하기
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 섹션 3: 완성 묵상 에세이 및 내보내기 -->
+    <section class="card section-result hidden" id="sectionResult">
+      <div class="card-header">
+        <span class="step-badge">3</span>
+        <h2>완성 묵상 에세이 종합</h2>
+        <span class="badge badge-success" id="lintBadge">린트 검증 대기</span>
+      </div>
+
+      <div class="result-toolbar">
+        <span class="filename-preview" id="filenamePreview"></span>
+      </div>
+
+      <div class="result-editor-wrapper">
+        <textarea id="resultMarkdown" rows="16" spellcheck="false"></textarea>
+      </div>
+
+      <div class="action-row result-actions">
+        <button type="button" class="btn btn-primary" id="btnExportMd">
+          <span class="btn-icon">📥</span> Export as MD
+        </button>
+        <button type="button" class="btn btn-outline" id="btnCopyClipboard">
+          <span class="btn-icon">📋</span> 클립보드 복사
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- 로딩 오버레이 -->
+  <div class="loading-overlay hidden" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p class="loading-text" id="loadingText">사유를 심화하고 있습니다...</p>
+  </div>
+
+  <!-- 토스트 알림 -->
+  <div class="toast hidden" id="toast"></div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
