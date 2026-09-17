@@ -16,10 +16,10 @@
       </div>
     </div>
     <div class="auth-area" id="authArea">
-      <button type="button" class="btn btn-auth" id="btnLogin">Google 로그인</button>
-      <div class="user-badge hidden" id="userBadge">
-        <span class="user-email" id="userEmail"></span>
-        <button type="button" class="btn btn-icon" id="btnLogout" title="로그아웃">✕</button>
+      <button type="button" class="btn btn-auth" id="btnOpenKeyModal">🔑 API 키 등록</button>
+      <div class="user-badge hidden" id="keyBadge">
+        <span class="key-status-text">🔑 무료 키 등록됨</span>
+        <button type="button" class="btn btn-icon" id="btnEditKey" title="API 키 변경">⚙️</button>
       </div>
     </div>
   </header>
@@ -109,6 +109,35 @@
       </div>
     </section>
   </main>
+
+  <!-- API 키 입력 모달 다이얼로그 -->
+  <div class="modal-overlay hidden" id="keyModalOverlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔑 Gemini API 키 설정</h3>
+        <button type="button" class="btn-icon" id="btnCloseKeyModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Google AI Studio에서 발급받은 <strong>무료 API 키</strong>를 입력하세요.<br>
+          입력한 키는 본인 브라우저 내부에만 안전하게 저장됩니다.
+        </p>
+        <div class="form-group">
+          <label for="inputApiKey">Gemini API Key (AIzaSy...)</label>
+          <input type="password" id="inputApiKey" placeholder="AIzaSy..." autocomplete="off">
+        </div>
+        <div class="modal-help">
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
+            Google AI Studio에서 키 확인하기 ↗
+          </a>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btnDeleteKey">키 삭제</button>
+        <button type="button" class="btn btn-primary" id="btnSaveKey">저장하기</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 로딩 오버레이 -->
   <div class="loading-overlay hidden" id="loadingOverlay">

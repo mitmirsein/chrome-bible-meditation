@@ -1,16 +1,16 @@
 const GEMINI_MODEL = 'gemini-3.8-flash';
 const BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-export async function callGemini({ token, systemInstruction, contents, isJson = false }) {
-  if (!token) {
-    throw new Error('인증 토큰이 없습니다. 먼저 상단의 Google 로그인 버튼을 눌러주십시오.');
+export async function callGemini({ apiKey, systemInstruction, contents, isJson = false }) {
+  if (!apiKey) {
+    throw new Error('Gemini API 키가 등록되지 않았습니다. 상단의 [API 키 등록] 버튼을 눌러 키를 입력해 주십시오.');
   }
 
   const body = {
     contents,
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 3000,
+      maxOutputTokens: 3500,
       thinkingConfig: {
         thinkingBudget: 2048
       }
@@ -27,11 +27,12 @@ export async function callGemini({ token, systemInstruction, contents, isJson = 
     body.generationConfig.responseMimeType = 'application/json';
   }
 
-  const response = await fetch(BASE_URL, {
+  const endpoint = `${BASE_URL}?key=${encodeURIComponent(apiKey.trim())}`;
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(body)
   });

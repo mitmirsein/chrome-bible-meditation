@@ -1,26 +1,25 @@
-export async function getGoogleAuthToken(interactive = false) {
-  return new Promise((resolve, reject) => {
-    if (typeof chrome === 'undefined' || !chrome.identity) {
-      return reject(new Error('chrome.identity API를 사용할 수 없는 환경입니다.'));
+// API Key Storage & Manager (chrome.storage.local)
+
+export async function getApiKey() {
+  return new Promise((resolve) => {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+      const localKey = localStorage.getItem('gemini_api_key') || '';
+      return resolve(localKey);
     }
-    chrome.identity.getAuthToken({ interactive }, (token) => {
-      if (chrome.runtime.lastError) {
-        return reject(new Error(chrome.runtime.lastError.message));
-      }
-      if (!token) {
-        return reject(new Error('Google OAuth 토큰을 획득하지 못했습니다.'));
-      }
-      resolve(token);
+    chrome.storage.local.get(['gemini_api_key'], (result) => {
+      resolve(result.gemini_api_key || '');
     });
   });
 }
 
-export async function removeGoogleAuthToken(token) {
+export async function setApiKey(apiKey) {
+  const cleanKey = (apiKey || '').trim();
   return new Promise((resolve, reject) => {
-    if (typeof chrome === 'undefined' || !chrome.identity) {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+      localStorage.setItem('gemini_api_key', cleanKey);
       return resolve();
     }
-    chrome.identity.removeCachedAuthToken({ token }, () => {
+    chrome.storage.local.set({ gemini_api_key: cleanKey }, () => {
       if (chrome.runtime.lastError) {
         return reject(new Error(chrome.runtime.lastError.message));
       }
@@ -29,19 +28,17 @@ export async function removeGoogleAuthToken(token) {
   });
 }
 
-export async function getGoogleUserProfile(token) {
-  try {
-    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` }
+export async function removeApiKey() {
+  return new Promise((resolve, reject) => {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+      localStorage.removeItem('gemini_api_key');
+      return resolve();
+    }
+    chrome.storage.local.remove(['gemini_api_key'], () => {
+      if (chrome.runtime.lastError) {
+        return reject(new Error(chrome.runtime.lastError.message));
+      }
+      resolve();
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return {
-      email: data.email || '',
-      name: data.name || '',
-      picture: data.picture || ''
-    };
-  } catch {
-    return null;
-  }
+  });
 }

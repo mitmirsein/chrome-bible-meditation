@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "성서 묵상 동반자 (Bible Meditation Companion)",
   "version": "1.0.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwZH81hPQy86fyybosXNQ1S28CX1p71lfYrTClOCmhoJrPr6nEjwLDmdUvMnpx9OwAWeqpUHvyhHwdLG7o5p+xTkXa0Biufs9xkG05rv66qXUWGiqr/89pcKG4Mb49P9juYr8Amgv7ESGQD+JbkAxgF33mm1DaHHFF5yyKCsPDFDsJhTkj37ARfPPxMOmtmIkQYJnsmlGphraKhU/SeSiBOMu9iHbEhJY35QcMAxHisMN76PxJKQPYNyUK2dQpWOaz5TjxC6LgsleYExodgN8p8k76CqK52HQhq3leYMkSGY5lmubWk7F7SLuYyxJiqS0H7BshDrrL9voIsBdhyaWmwIDAQAB",
   "description": "성경 본문과 1차 초안 묵상 메모를 바탕으로 돈 까밀로와 신학적 대화를 나누고 완성 에세이를 마크다운으로 내보내는 크롬 사이드 패널 익스텐션입니다.",
   "icons": {
     "16": "icons/icon-16.png",
@@ -24,15 +25,10 @@
   },
   "permissions": [
     "sidePanel",
-    "identity",
-    "downloads",
-    "storage"
+    "storage",
+    "downloads"
   ],
-  "oauth2": {
-    "client_id": "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/generative-language",
-      "https://www.googleapis.com/auth/userinfo.email"
-    ]
-  }
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*"
+  ]
 }

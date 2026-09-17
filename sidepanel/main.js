@@ -1,11 +1,11 @@
-import { getGoogleAuthToken, removeGoogleAuthToken, getGoogleUserProfile } from './auth.js';
+import { getApiKey, setApiKey, removeApiKey } from './auth.js';
 import { callGemini } from './gemini.js';
 import { buildDonCamilloPrompt, buildSynthesisPrompt } from './prompts.js';
 import { generateFilename, formatMeditationMarkdown, lintMarkdown, triggerDownload } from './exporter.js';
 
 // Application State
 const state = {
-  authToken: null,
+  apiKey: '',
   dialogueHistory: [],
   synthesizedMarkdown: '',
   book: '',
@@ -15,10 +15,15 @@ const state = {
 };
 
 // DOM Elements
-const btnLogin = document.getElementById('btnLogin');
-const btnLogout = document.getElementById('btnLogout');
-const userBadge = document.getElementById('userBadge');
-const userEmail = document.getElementById('userEmail');
+const btnOpenKeyModal = document.getElementById('btnOpenKeyModal');
+const keyBadge = document.getElementById('keyBadge');
+const btnEditKey = document.getElementById('btnEditKey');
+
+const keyModalOverlay = document.getElementById('keyModalOverlay');
+const btnCloseKeyModal = document.getElementById('btnCloseKeyModal');
+const inputApiKey = document.getElementById('inputApiKey');
+const btnSaveKey = document.getElementById('btnSaveKey');
+const btnDeleteKey = document.getElementById('btnDeleteKey');
 
 const inputBook = document.getElementById('inputBook');
 const inputChapter = document.getElementById('inputChapter');
@@ -80,36 +85,53 @@ function appendDialogueBubble(author, text, isAi = false) {
   dialogueFeed.scrollTop = dialogueFeed.scrollHeight;
 }
 
-// Authentication
-async function checkAuth(interactive = false) {
-  try {
-    const token = await getGoogleAuthToken(interactive);
-    state.authToken = token;
+// API Key Management
+async function initApiKey() {
+  const key = await getApiKey();
+  state.apiKey = key;
+  updateKeyUI(key);
+}
 
-    const profile = await getGoogleUserProfile(token);
-    userEmail.textContent = profile?.email || '인증됨';
-    btnLogin.classList.add('hidden');
-    userBadge.classList.remove('hidden');
-    return token;
-  } catch (err) {
-    state.authToken = null;
-    btnLogin.classList.remove('hidden');
-    userBadge.classList.add('hidden');
-    if (interactive) {
-      showToast(`로그인 실패: ${err.message}`);
-    }
-    return null;
+function updateKeyUI(key) {
+  if (key) {
+    btnOpenKeyModal.classList.add('hidden');
+    keyBadge.classList.remove('hidden');
+  } else {
+    btnOpenKeyModal.classList.remove('hidden');
+    keyBadge.classList.add('hidden');
   }
 }
 
-async function handleLogout() {
-  if (state.authToken) {
-    await removeGoogleAuthToken(state.authToken);
-    state.authToken = null;
-    btnLogin.classList.remove('hidden');
-    userBadge.classList.add('hidden');
-    showToast('로그아웃되었습니다.');
+function openKeyModal() {
+  inputApiKey.value = state.apiKey || '';
+  keyModalOverlay.classList.remove('hidden');
+  inputApiKey.focus();
+}
+
+function closeKeyModal() {
+  keyModalOverlay.classList.add('hidden');
+}
+
+async function handleSaveKey() {
+  const entered = inputApiKey.value.trim();
+  if (!entered) {
+    showToast('API 키를 입력해 주십시오.');
+    return;
   }
+  await setApiKey(entered);
+  state.apiKey = entered;
+  updateKeyUI(entered);
+  closeKeyModal();
+  showToast('Gemini API 키가 안전하게 저장되었습니다.');
+}
+
+async function handleDeleteKey() {
+  await removeApiKey();
+  state.apiKey = '';
+  inputApiKey.value = '';
+  updateKeyUI('');
+  closeKeyModal();
+  showToast('API 키가 삭제되었습니다.');
 }
 
 // Phase 1: Don Camillo Dialogue Flow
@@ -125,9 +147,10 @@ async function handleStartDialogue() {
     return;
   }
 
-  if (!state.authToken) {
-    const token = await checkAuth(true);
-    if (!token) return;
+  if (!state.apiKey) {
+    openKeyModal();
+    showToast('먼저 Gemini API 키를 등록해 주십시오.');
+    return;
   }
 
   showLoading('돈 까밀로가 본문과 묵상 초안을 읽고 있습니다...');
@@ -142,7 +165,7 @@ async function handleStartDialogue() {
     });
 
     const response = await callGemini({
-      token: state.authToken,
+      apiKey: state.apiKey,
       systemInstruction: promptObj.systemInstruction,
       contents: promptObj.contents
     });
@@ -167,8 +190,8 @@ async function handleSendReply() {
   const replyText = inputUserReply.value.trim();
   if (!replyText) return;
 
-  if (!state.authToken) {
-    showToast('로그인이 필요합니다.');
+  if (!state.apiKey) {
+    openKeyModal();
     return;
   }
 
@@ -189,7 +212,7 @@ async function handleSendReply() {
     });
 
     const response = await callGemini({
-      token: state.authToken,
+      apiKey: state.apiKey,
       systemInstruction: promptObj.systemInstruction,
       contents: promptObj.contents
     });
@@ -209,8 +232,8 @@ async function handleSendReply() {
 
 // Phase 2: Synthesis Essay & Markdown Export
 async function handleSynthesizeEssay() {
-  if (!state.authToken) {
-    showToast('로그인이 필요합니다.');
+  if (!state.apiKey) {
+    openKeyModal();
     return;
   }
 
@@ -225,7 +248,7 @@ async function handleSynthesizeEssay() {
     });
 
     const rawJson = await callGemini({
-      token: state.authToken,
+      apiKey: state.apiKey,
       systemInstruction: promptObj.systemInstruction,
       contents: promptObj.contents,
       isJson: true
@@ -235,7 +258,6 @@ async function handleSynthesizeEssay() {
     try {
       data = JSON.parse(rawJson);
     } catch {
-      // Fallback clean
       const cleaned = rawJson.replace(/```json\s*|```/g, '').trim();
       data = JSON.parse(cleaned);
     }
@@ -307,8 +329,12 @@ async function handleCopyClipboard() {
 }
 
 // Event Listeners
-btnLogin.addEventListener('click', () => checkAuth(true));
-btnLogout.addEventListener('click', handleLogout);
+btnOpenKeyModal.addEventListener('click', openKeyModal);
+btnEditKey.addEventListener('click', openKeyModal);
+btnCloseKeyModal.addEventListener('click', closeKeyModal);
+btnSaveKey.addEventListener('click', handleSaveKey);
+btnDeleteKey.addEventListener('click', handleDeleteKey);
+
 btnStartDialogue.addEventListener('click', handleStartDialogue);
 btnSendReply.addEventListener('click', handleSendReply);
 btnSynthesizeEssay.addEventListener('click', handleSynthesizeEssay);
@@ -322,5 +348,12 @@ inputUserReply.addEventListener('keydown', (e) => {
   }
 });
 
+// ESC 키로 모달 닫기
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !keyModalOverlay.classList.contains('hidden')) {
+    closeKeyModal();
+  }
+});
+
 // Init on mount
-checkAuth(false);
+initApiKey();
