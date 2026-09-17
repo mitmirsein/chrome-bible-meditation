@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "성서 묵상 동반자 (Bible Meditation Companion)",
+  "version": "1.0.0",
+  "description": "성경 본문과 1차 초안 묵상 메모를 바탕으로 돈 까밀로와 신학적 대화를 나누고 완성 에세이를 마크다운으로 내보내는 크롬 사이드 패널 익스텐션입니다.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    },
+    "default_title": "성서 묵상 패널 열기"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  },
+  "permissions": [
+    "sidePanel",
+    "identity",
+    "downloads",
+    "storage"
+  ],
+  "oauth2": {
+    "client_id": "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/generative-language",
+      "https://www.googleapis.com/auth/userinfo.email"
+    ]
+  }
+}
