@@ -2,7 +2,7 @@
 
 최종 갱신일: 2026-09-18
 
-**성서 묵상 동반자(Chrome Bible Meditation Companion)**는 사용자의 개인정보와 신앙적 묵상 내용의 프라이버시를 절대적으로 존중하며, **개발자 서버가 존재하지 않는 100% 클라이언트 독립 구조(Zero-Server Architecture)**로 설계되었습니다.
+**성서 묵상 동반자**(Chrome Bible Meditation Companion)는 사용자의 개인정보와 신앙적 묵상 내용의 프라이버시를 절대적으로 존중하며, **개발자 서버가 존재하지 않는 100% 클라이언트 독립 구조**(Zero-Server Architecture)로 설계되었습니다.
 
 ---
 
