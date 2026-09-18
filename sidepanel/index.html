@@ -15,12 +15,12 @@
         <span class="brand-subtitle">Bible Meditation Companion</span>
       </div>
     </div>
-    <div class="auth-area" id="authArea">
-      <button type="button" class="btn btn-auth" id="btnOpenKeyModal">🔑 API 키 등록</button>
-      <div class="user-badge hidden" id="keyBadge">
-        <span class="key-status-text">🔑 무료 키 등록됨</span>
-        <button type="button" class="btn btn-icon" id="btnEditKey" title="API 키 변경">⚙️</button>
-      </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-provider-pill" id="btnActiveProviderBadge">
+        <span class="provider-dot" id="providerDot"></span>
+        <span id="activeModelName">Gemini 3.8 Flash</span>
+      </button>
+      <button type="button" class="btn btn-icon" id="btnOpenSettings" title="AI 엔진 및 API 키 설정">⚙️</button>
     </div>
   </header>
 
@@ -110,31 +110,73 @@
     </section>
   </main>
 
-  <!-- API 키 입력 모달 다이얼로그 -->
-  <div class="modal-overlay hidden" id="keyModalOverlay">
+  <!-- AI 설정 모달 다이얼로그 (Multi-Provider) -->
+  <div class="modal-overlay hidden" id="settingsModalOverlay">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>🔑 Gemini API 키 설정</h3>
-        <button type="button" class="btn-icon" id="btnCloseKeyModal">✕</button>
+        <h3>⚙️ AI 엔진 및 API 키 설정</h3>
+        <button type="button" class="btn-icon" id="btnCloseSettingsModal">✕</button>
       </div>
       <div class="modal-body">
-        <p class="modal-desc">
-          Google AI Studio에서 발급받은 <strong>무료 API 키</strong>를 입력하세요.<br>
-          입력한 키는 본인 브라우저 내부에만 안전하게 저장됩니다.
-        </p>
         <div class="form-group">
-          <label for="inputApiKey">Gemini API Key (AIzaSy...)</label>
-          <input type="password" id="inputApiKey" placeholder="AIzaSy..." autocomplete="off">
+          <label>사용할 기본 AI 엔진 선택</label>
+          <div class="provider-radio-group">
+            <label class="radio-label">
+              <input type="radio" name="providerSelect" value="gemini" checked>
+              <span><strong>Google Gemini</strong> (gemini-3.8-flash · 무료)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="providerSelect" value="claude">
+              <span><strong>Anthropic Claude</strong> (claude-sonnet-5)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="providerSelect" value="openai">
+              <span><strong>OpenAI</strong> (gpt-5.6-luna-max)</span>
+            </label>
+          </div>
         </div>
-        <div class="modal-help">
-          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
-            Google AI Studio에서 키 확인하기 ↗
-          </a>
+
+        <hr class="modal-divider">
+
+        <!-- Google Gemini 설정 -->
+        <div class="provider-config-section" id="cfgSectionGemini">
+          <div class="form-group">
+            <label for="cfgGeminiKey">Google Gemini API Key (AIzaSy...)</label>
+            <input type="password" id="cfgGeminiKey" placeholder="Google AI Studio 무료 키" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="cfgGeminiModel">모델 식별자</label>
+            <input type="text" id="cfgGeminiModel" value="gemini-3.8-flash" autocomplete="off">
+          </div>
+        </div>
+
+        <!-- Anthropic Claude 설정 -->
+        <div class="provider-config-section" id="cfgSectionClaude">
+          <div class="form-group">
+            <label for="cfgClaudeKey">Anthropic Claude API Key (sk-ant-...)</label>
+            <input type="password" id="cfgClaudeKey" placeholder="sk-ant-api03-..." autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="cfgClaudeModel">모델 식별자</label>
+            <input type="text" id="cfgClaudeModel" value="claude-sonnet-5" autocomplete="off">
+          </div>
+        </div>
+
+        <!-- OpenAI 설정 -->
+        <div class="provider-config-section" id="cfgSectionOpenai">
+          <div class="form-group">
+            <label for="cfgOpenaiKey">OpenAI API Key (sk-proj-...)</label>
+            <input type="password" id="cfgOpenaiKey" placeholder="sk-..." autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="cfgOpenaiModel">모델 식별자</label>
+            <input type="text" id="cfgOpenaiModel" value="gpt-5.6-luna-max" autocomplete="off">
+          </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline" id="btnDeleteKey">키 삭제</button>
-        <button type="button" class="btn btn-primary" id="btnSaveKey">저장하기</button>
+        <button type="button" class="btn btn-outline" id="btnCancelSettings">취소</button>
+        <button type="button" class="btn btn-primary" id="btnSaveSettings">저장하기</button>
       </div>
     </div>
   </div>

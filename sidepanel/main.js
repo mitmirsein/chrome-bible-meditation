@@ -1,11 +1,11 @@
-import { getApiKey, setApiKey, removeApiKey } from './auth.js';
-import { callGemini } from './gemini.js';
+import { getSettings, saveSettings, getActiveApiKeyAndModel } from './auth.js';
+import { callAI } from './ai-client.js';
 import { buildDonCamilloPrompt, buildSynthesisPrompt } from './prompts.js';
 import { generateFilename, formatMeditationMarkdown, lintMarkdown, triggerDownload } from './exporter.js';
 
 // Application State
 const state = {
-  apiKey: '',
+  settings: null,
   dialogueHistory: [],
   synthesizedMarkdown: '',
   book: '',
@@ -15,15 +15,22 @@ const state = {
 };
 
 // DOM Elements
-const btnOpenKeyModal = document.getElementById('btnOpenKeyModal');
-const keyBadge = document.getElementById('keyBadge');
-const btnEditKey = document.getElementById('btnEditKey');
+const btnActiveProviderBadge = document.getElementById('btnActiveProviderBadge');
+const activeModelName = document.getElementById('activeModelName');
+const providerDot = document.getElementById('providerDot');
+const btnOpenSettings = document.getElementById('btnOpenSettings');
 
-const keyModalOverlay = document.getElementById('keyModalOverlay');
-const btnCloseKeyModal = document.getElementById('btnCloseKeyModal');
-const inputApiKey = document.getElementById('inputApiKey');
-const btnSaveKey = document.getElementById('btnSaveKey');
-const btnDeleteKey = document.getElementById('btnDeleteKey');
+const settingsModalOverlay = document.getElementById('settingsModalOverlay');
+const btnCloseSettingsModal = document.getElementById('btnCloseSettingsModal');
+const btnCancelSettings = document.getElementById('btnCancelSettings');
+const btnSaveSettings = document.getElementById('btnSaveSettings');
+
+const cfgGeminiKey = document.getElementById('cfgGeminiKey');
+const cfgGeminiModel = document.getElementById('cfgGeminiModel');
+const cfgClaudeKey = document.getElementById('cfgClaudeKey');
+const cfgClaudeModel = document.getElementById('cfgClaudeModel');
+const cfgOpenaiKey = document.getElementById('cfgOpenaiKey');
+const cfgOpenaiModel = document.getElementById('cfgOpenaiModel');
 
 const inputBook = document.getElementById('inputBook');
 const inputChapter = document.getElementById('inputChapter');
@@ -85,53 +92,74 @@ function appendDialogueBubble(author, text, isAi = false) {
   dialogueFeed.scrollTop = dialogueFeed.scrollHeight;
 }
 
-// API Key Management
-async function initApiKey() {
-  const key = await getApiKey();
-  state.apiKey = key;
-  updateKeyUI(key);
+// Settings & Provider UI
+async function loadAndApplySettings() {
+  state.settings = await getSettings();
+  updateHeaderBadge();
 }
 
-function updateKeyUI(key) {
-  if (key) {
-    btnOpenKeyModal.classList.add('hidden');
-    keyBadge.classList.remove('hidden');
+function updateHeaderBadge() {
+  const s = state.settings;
+  if (!s) return;
+
+  const dotColors = {
+    gemini: '#10b981', // green
+    claude: '#8b5cf6', // purple
+    openai: '#3b82f6'  // blue
+  };
+
+  let displayLabel = 'Gemini 3.8 Flash';
+  if (s.activeProvider === 'claude') {
+    displayLabel = `Claude (${s.claudeModel || 'claude-sonnet-5'})`;
+  } else if (s.activeProvider === 'openai') {
+    displayLabel = `OpenAI (${s.openaiModel || 'gpt-5.6-luna-max'})`;
   } else {
-    btnOpenKeyModal.classList.remove('hidden');
-    keyBadge.classList.add('hidden');
+    displayLabel = `Gemini (${s.geminiModel || 'gemini-3.8-flash'})`;
   }
+
+  activeModelName.textContent = displayLabel;
+  providerDot.style.backgroundColor = dotColors[s.activeProvider] || '#10b981';
 }
 
-function openKeyModal() {
-  inputApiKey.value = state.apiKey || '';
-  keyModalOverlay.classList.remove('hidden');
-  inputApiKey.focus();
+function openSettingsModal() {
+  const s = state.settings || {};
+
+  // 라디오 버튼 선택
+  const radio = document.querySelector(`input[name="providerSelect"][value="${s.activeProvider || 'gemini'}"]`);
+  if (radio) radio.checked = true;
+
+  cfgGeminiKey.value = s.geminiApiKey || '';
+  cfgGeminiModel.value = s.geminiModel || 'gemini-3.8-flash';
+  cfgClaudeKey.value = s.claudeApiKey || '';
+  cfgClaudeModel.value = s.claudeModel || 'claude-sonnet-5';
+  cfgOpenaiKey.value = s.openaiApiKey || '';
+  cfgOpenaiModel.value = s.openaiModel || 'gpt-5.6-luna-max';
+
+  settingsModalOverlay.classList.remove('hidden');
 }
 
-function closeKeyModal() {
-  keyModalOverlay.classList.add('hidden');
+function closeSettingsModal() {
+  settingsModalOverlay.classList.add('hidden');
 }
 
-async function handleSaveKey() {
-  const entered = inputApiKey.value.trim();
-  if (!entered) {
-    showToast('API 키를 입력해 주십시오.');
-    return;
-  }
-  await setApiKey(entered);
-  state.apiKey = entered;
-  updateKeyUI(entered);
-  closeKeyModal();
-  showToast('Gemini API 키가 안전하게 저장되었습니다.');
-}
+async function handleSaveSettings() {
+  const selectedProvider = document.querySelector('input[name="providerSelect"]:checked')?.value || 'gemini';
 
-async function handleDeleteKey() {
-  await removeApiKey();
-  state.apiKey = '';
-  inputApiKey.value = '';
-  updateKeyUI('');
-  closeKeyModal();
-  showToast('API 키가 삭제되었습니다.');
+  const newSettings = {
+    activeProvider: selectedProvider,
+    geminiApiKey: cfgGeminiKey.value.trim(),
+    geminiModel: cfgGeminiModel.value.trim() || 'gemini-3.8-flash',
+    claudeApiKey: cfgClaudeKey.value.trim(),
+    claudeModel: cfgClaudeModel.value.trim() || 'claude-sonnet-5',
+    openaiApiKey: cfgOpenaiKey.value.trim(),
+    openaiModel: cfgOpenaiModel.value.trim() || 'gpt-5.6-luna-max'
+  };
+
+  await saveSettings(newSettings);
+  state.settings = newSettings;
+  updateHeaderBadge();
+  closeSettingsModal();
+  showToast('AI 설정이 저장되었습니다.');
 }
 
 // Phase 1: Don Camillo Dialogue Flow
@@ -147,13 +175,14 @@ async function handleStartDialogue() {
     return;
   }
 
-  if (!state.apiKey) {
-    openKeyModal();
-    showToast('먼저 Gemini API 키를 등록해 주십시오.');
+  const active = await getActiveApiKeyAndModel();
+  if (!active.apiKey) {
+    openSettingsModal();
+    showToast(`먼저 ${active.provider} API 키를 설정해 주십시오.`);
     return;
   }
 
-  showLoading('돈 까밀로가 본문과 묵상 초안을 읽고 있습니다...');
+  showLoading(`돈 까밀로(${active.model})가 본문과 묵상 초안을 읽고 있습니다...`);
   try {
     state.dialogueHistory = [];
     dialogueFeed.innerHTML = '';
@@ -164,8 +193,10 @@ async function handleStartDialogue() {
       dialogueHistory: state.dialogueHistory
     });
 
-    const response = await callGemini({
-      apiKey: state.apiKey,
+    const response = await callAI({
+      provider: active.provider,
+      apiKey: active.apiKey,
+      model: active.model,
       systemInstruction: promptObj.systemInstruction,
       contents: promptObj.contents
     });
@@ -190,8 +221,9 @@ async function handleSendReply() {
   const replyText = inputUserReply.value.trim();
   if (!replyText) return;
 
-  if (!state.apiKey) {
-    openKeyModal();
+  const active = await getActiveApiKeyAndModel();
+  if (!active.apiKey) {
+    openSettingsModal();
     return;
   }
 
@@ -203,7 +235,7 @@ async function handleSendReply() {
     parts: [{ text: replyText }]
   });
 
-  showLoading('돈 까밀로가 신학적 사유를 되묻고 있습니다...');
+  showLoading(`돈 까밀로(${active.model})가 신학적 사유를 되묻고 있습니다...`);
   try {
     const promptObj = buildDonCamilloPrompt({
       scripture: state.scripture,
@@ -211,8 +243,10 @@ async function handleSendReply() {
       dialogueHistory: state.dialogueHistory
     });
 
-    const response = await callGemini({
-      apiKey: state.apiKey,
+    const response = await callAI({
+      provider: active.provider,
+      apiKey: active.apiKey,
+      model: active.model,
       systemInstruction: promptObj.systemInstruction,
       contents: promptObj.contents
     });
@@ -232,12 +266,13 @@ async function handleSendReply() {
 
 // Phase 2: Synthesis Essay & Markdown Export
 async function handleSynthesizeEssay() {
-  if (!state.apiKey) {
-    openKeyModal();
+  const active = await getActiveApiKeyAndModel();
+  if (!active.apiKey) {
+    openSettingsModal();
     return;
   }
 
-  showLoading('C.S. Lewis × Eugene Peterson 스타일로 완성 에세이를 집필 중입니다...');
+  showLoading(`C.S. Lewis × Eugene Peterson 스타일로 완성 에세이를 집필 중입니다 (${active.model})...`);
   try {
     const promptObj = buildSynthesisPrompt({
       scripture: state.scripture,
@@ -247,8 +282,10 @@ async function handleSynthesizeEssay() {
       chapter: state.chapter
     });
 
-    const rawJson = await callGemini({
-      apiKey: state.apiKey,
+    const rawJson = await callAI({
+      provider: active.provider,
+      apiKey: active.apiKey,
+      model: active.model,
       systemInstruction: promptObj.systemInstruction,
       contents: promptObj.contents,
       isJson: true
@@ -329,11 +366,11 @@ async function handleCopyClipboard() {
 }
 
 // Event Listeners
-btnOpenKeyModal.addEventListener('click', openKeyModal);
-btnEditKey.addEventListener('click', openKeyModal);
-btnCloseKeyModal.addEventListener('click', closeKeyModal);
-btnSaveKey.addEventListener('click', handleSaveKey);
-btnDeleteKey.addEventListener('click', handleDeleteKey);
+btnActiveProviderBadge.addEventListener('click', openSettingsModal);
+btnOpenSettings.addEventListener('click', openSettingsModal);
+btnCloseSettingsModal.addEventListener('click', closeSettingsModal);
+btnCancelSettings.addEventListener('click', closeSettingsModal);
+btnSaveSettings.addEventListener('click', handleSaveSettings);
 
 btnStartDialogue.addEventListener('click', handleStartDialogue);
 btnSendReply.addEventListener('click', handleSendReply);
@@ -348,12 +385,11 @@ inputUserReply.addEventListener('keydown', (e) => {
   }
 });
 
-// ESC 키로 모달 닫기
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !keyModalOverlay.classList.contains('hidden')) {
-    closeKeyModal();
+  if (e.key === 'Escape' && !settingsModalOverlay.classList.contains('hidden')) {
+    closeSettingsModal();
   }
 });
 
 // Init on mount
-initApiKey();
+loadAndApplySettings();
