@@ -5,7 +5,8 @@ import {
   sanitizeFilenamePart,
   generateFilename,
   formatMeditationMarkdown,
-  lintMarkdown
+  lintMarkdown,
+  renderDialogueMarkdown
 } from '../sidepanel/exporter.js';
 
 test('getLocalIsoDate returns formatted local YYYY-MM-DD', () => {
@@ -71,10 +72,29 @@ test('formatMeditationMarkdown structures 3-part layout correctly', () => {
     essayBody: '첫째 날의 말씀이 시작됩니다.'
   });
 
-  assert.match(output, /창세기 1:1/);
+  assert.match(output, /### 성경 본문 \(창세기 1장\)/);
+  assert.match(output, /> 창세기 1:1/);
+  assert.match(output, /### 1차 묵상 초안 메모 \(씨앗\)/);
   assert.match(output, /초안 메모입니다\./);
   assert.match(output, /### 신학적 대화 프로토콜/);
   assert.match(output, /### 빛과 어둠의 분리 \(창세기 1장\)/);
   assert.match(output, /첫째 날의 말씀이 시작됩니다\./);
 });
+
+test('renderDialogueMarkdown converts bold quotes, blockquotes, and sanitizes XSS', () => {
+  const input = '**"그들이 깨끗하지 않은 가운데서 죽지 않을 것이다."**\n\n> 레위기 18장 말씀\n이것은 **중요한** 질문입니다.';
+  const html = renderDialogueMarkdown(input);
+
+  assert.match(html, /<strong>&quot;그들이 깨끗하지 않은 가운데서 죽지 않을 것이다\.&quot;<\/strong>/);
+  assert.match(html, /<blockquote class="dialogue-quote">레위기 18장 말씀<\/blockquote>/);
+  assert.match(html, /<strong>중요한<\/strong>/);
+  assert.match(html, /<br>/);
+
+  // XSS protection
+  const malicious = '<script>alert("XSS")</script>';
+  const safeHtml = renderDialogueMarkdown(malicious);
+  assert.equal(safeHtml.includes('<script>'), false);
+  assert.match(safeHtml, /&lt;script&gt;/);
+});
+
 

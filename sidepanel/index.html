@@ -88,6 +88,10 @@
             <span class="btn-icon">✍️</span> 에세이 종합하기
           </button>
         </div>
+        <div class="synthesis-hint-box">
+          <span class="hint-icon">💡</span>
+          <span>답변을 계속 주고받으며 사유를 심화할 수 있습니다. 충분하다고 느낄 때 언제든 <strong>[에세이 종합하기]</strong>를 누르면 1차 초안과 모든 대화를 갈무리하여 완성 에세이를 집필합니다.</span>
+        </div>
       </div>
     </section>
 
@@ -126,6 +130,11 @@
         <button type="button" class="btn-icon" id="btnCloseSettingsModal">✕</button>
       </div>
       <div class="modal-body">
+        <div class="api-guide-callout">
+          <span class="hint-icon">🔑</span>
+          <span>각 사의 공식 콘솔에서 발급받은 개인 API 키를 등록해 주십시오. (세부 절차는 <a href="https://github.com/mitmirsein/chrome-bible-meditation/blob/main/API_KEYS.md" target="_blank" class="link-inline"><strong>API 키 발급 가이드 (API_KEYS.md) ↗</strong></a> 참고)</span>
+        </div>
+
         <div class="form-group">
           <label>사용할 기본 AI 엔진 선택</label>
           <div class="provider-radio-group">
@@ -151,8 +160,12 @@
           <div class="form-group">
             <div class="label-with-action">
               <label for="cfgGeminiKey">Google Gemini API Key</label>
-              <span class="key-status-pill" id="geminiKeyStatus">미등록</span>
+              <div class="label-links">
+                <a href="https://aistudio.google.com/apikey" target="_blank" class="link-ext">Google AI Studio 키 발급 ↗</a>
+                <span class="key-status-pill" id="geminiKeyStatus">미등록</span>
+              </div>
             </div>
+            <div class="field-tip">💡 Google AI Studio에서 <strong>➕ 새 프로젝트 만들기</strong>로 키를 생성하면 100% 무료 티어로 사용하실 수 있습니다.</div>
             <input type="password" id="cfgGeminiKey" placeholder="새 키 입력 (AIzaSy...)" autocomplete="off">
           </div>
           <div class="form-group">
@@ -170,7 +183,10 @@
           <div class="form-group">
             <div class="label-with-action">
               <label for="cfgClaudeKey">Anthropic Claude API Key</label>
-              <span class="key-status-pill" id="claudeKeyStatus">미등록</span>
+              <div class="label-links">
+                <a href="https://console.anthropic.com/settings/keys" target="_blank" class="link-ext">Anthropic Console 키 발급 ↗</a>
+                <span class="key-status-pill" id="claudeKeyStatus">미등록</span>
+              </div>
             </div>
             <input type="password" id="cfgClaudeKey" placeholder="새 키 입력 (sk-ant-...)" autocomplete="off">
           </div>
@@ -188,7 +204,10 @@
           <div class="form-group">
             <div class="label-with-action">
               <label for="cfgOpenaiKey">OpenAI API Key</label>
-              <span class="key-status-pill" id="openaiKeyStatus">미등록</span>
+              <div class="label-links">
+                <a href="https://platform.openai.com/api-keys" target="_blank" class="link-ext">OpenAI Platform 키 발급 ↗</a>
+                <span class="key-status-pill" id="openaiKeyStatus">미등록</span>
+              </div>
             </div>
             <input type="password" id="cfgOpenaiKey" placeholder="새 키 입력 (sk-...)" autocomplete="off">
           </div>

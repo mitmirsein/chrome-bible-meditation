@@ -2,7 +2,7 @@ import { getSettings, saveSettings, getActiveApiKeyAndModel, maskApiKey } from '
 import { callAI } from './ai-client.js';
 import { MODEL_REGISTRY, getModelLabel } from './models.js';
 import { buildDonCamilloPrompt, buildSynthesisPrompt } from './prompts.js';
-import { generateFilename, formatMeditationMarkdown, lintMarkdown, triggerDownload } from './exporter.js';
+import { generateFilename, formatMeditationMarkdown, lintMarkdown, triggerDownload, renderDialogueMarkdown } from './exporter.js';
 
 // Application State
 const state = {
@@ -102,7 +102,7 @@ function appendDialogueBubble(author, text, isAi = false) {
 
   const bubble = document.createElement('div');
   bubble.className = 'message-bubble';
-  bubble.textContent = text;
+  bubble.innerHTML = renderDialogueMarkdown(text);
 
   msgWrapper.appendChild(authorSpan);
   msgWrapper.appendChild(bubble);
@@ -314,6 +314,11 @@ async function handleSendReply() {
 
 // Phase 2: Synthesis Essay & Markdown Export
 async function handleSynthesizeEssay() {
+  state.book = inputBook.value.trim();
+  state.chapter = inputChapter.value.trim();
+  state.scripture = inputScripture.value.trim();
+  state.draft = inputDraft.value.trim();
+
   const active = await getActiveApiKeyAndModel();
   if (!active.apiKey) {
     openSettingsModal();
@@ -418,7 +423,7 @@ async function handleCopyClipboard() {
 
   try {
     await navigator.clipboard.writeText(currentContent);
-    showToast('클립보드에 복사되었습니다.');
+    showToast('클립보드에 복사되었습니다 (성경 본문·초안·대화·에세이 전체).');
   } catch {
     showToast('클립보드 복사에 실패했습니다.');
   }

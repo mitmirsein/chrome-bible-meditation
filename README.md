@@ -92,9 +92,10 @@ flowchart TD
 1. 브라우저 툴바의 **[성서 묵상 패널 열기]** 아이콘을 클릭합니다.
 2. 사이드 패널 상단의 **모델 배지** 또는 **설정(⚙️)** 버튼을 누릅니다.
 3. 원하는 기본 AI 엔진을 선택하고 보유한 API 키를 입력합니다:
-   - **Google Gemini**: Google AI Studio의 무료 키(`AIzaSy...`) 입력
-   - **Anthropic Claude**: Claude API 키(`sk-ant-...`) 입력
-   - **OpenAI**: OpenAI API 키(`sk-...`) 입력
+   - **Google Gemini**: [Google AI Studio](https://aistudio.google.com/apikey)에서 무료 키(`AIzaSy...`) 발급 후 입력 (새 프로젝트 만들기 선택 시 100% 무료 티어)
+   - **Anthropic Claude**: [Anthropic Console](https://console.anthropic.com/settings/keys)에서 API 키(`sk-ant-...`) 발급 후 입력
+   - **OpenAI**: [OpenAI Platform](https://platform.openai.com/api-keys)에서 API 키(`sk-...`) 발급 후 입력
+   - 각 사별 상세 키 발급 절차 및 무료 설정 팁은 **[API 키 발급 가이드 (API_KEYS.md)](API_KEYS.md)**를 참조하십시오.
 4. **[저장하기]**를 누르면 즉시 설정이 반영됩니다.
 5. 본문 구절과 1차 초안 메모를 입력한 뒤 **[🎭 돈 까밀로와 대화 시작]**을 눌러 묵상을 시작합니다.
 
@@ -110,6 +111,7 @@ flowchart TD
 
 ## 📄 문서 및 라이선스
 
+- **API 키 발급 안내**: [API 키 발급 가이드 (API_KEYS.md)](API_KEYS.md)
 - **페르소나 설계 철학**: [AI 페르소나 안내 (PERSONAS.md)](PERSONAS.md)
 - **개인정보 처리방침**: [개인정보 처리방침 (PRIVACY.md)](PRIVACY.md)
 - **보안 정책**: [보안 정책 (SECURITY.md)](SECURITY.md)
