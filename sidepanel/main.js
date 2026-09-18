@@ -1,5 +1,6 @@
-import { getSettings, saveSettings, getActiveApiKeyAndModel } from './auth.js';
+import { getSettings, saveSettings, getActiveApiKeyAndModel, maskApiKey } from './auth.js';
 import { callAI } from './ai-client.js';
+import { MODEL_REGISTRY, getModelLabel } from './models.js';
 import { buildDonCamilloPrompt, buildSynthesisPrompt } from './prompts.js';
 import { generateFilename, formatMeditationMarkdown, lintMarkdown, triggerDownload } from './exporter.js';
 
@@ -11,7 +12,8 @@ const state = {
   book: '',
   chapter: '',
   scripture: '',
-  draft: ''
+  draft: '',
+  currentAbortController: null
 };
 
 // DOM Elements
@@ -27,10 +29,17 @@ const btnSaveSettings = document.getElementById('btnSaveSettings');
 
 const cfgGeminiKey = document.getElementById('cfgGeminiKey');
 const cfgGeminiModel = document.getElementById('cfgGeminiModel');
+const geminiKeyStatus = document.getElementById('geminiKeyStatus');
+
 const cfgClaudeKey = document.getElementById('cfgClaudeKey');
 const cfgClaudeModel = document.getElementById('cfgClaudeModel');
+const claudeKeyStatus = document.getElementById('claudeKeyStatus');
+
 const cfgOpenaiKey = document.getElementById('cfgOpenaiKey');
 const cfgOpenaiModel = document.getElementById('cfgOpenaiModel');
+const openaiKeyStatus = document.getElementById('openaiKeyStatus');
+
+const chkPersistKeys = document.getElementById('chkPersistKeys');
 
 const inputBook = document.getElementById('inputBook');
 const inputChapter = document.getElementById('inputChapter');
@@ -53,16 +62,26 @@ const btnCopyClipboard = document.getElementById('btnCopyClipboard');
 
 const loadingOverlay = document.getElementById('loadingOverlay');
 const loadingText = document.getElementById('loadingText');
+const btnCancelRequest = document.getElementById('btnCancelRequest');
 const toast = document.getElementById('toast');
 
 // Helpers
+function setActionButtonsDisabled(disabled) {
+  btnStartDialogue.disabled = disabled;
+  btnSendReply.disabled = disabled;
+  btnSynthesizeEssay.disabled = disabled;
+}
+
 function showLoading(message) {
   loadingText.textContent = message || '작업을 처리하고 있습니다...';
   loadingOverlay.classList.remove('hidden');
+  setActionButtonsDisabled(true);
 }
 
 function hideLoading() {
   loadingOverlay.classList.add('hidden');
+  setActionButtonsDisabled(false);
+  state.currentAbortController = null;
 }
 
 function showToast(message, duration = 2500) {
@@ -102,52 +121,46 @@ function updateHeaderBadge() {
   const s = state.settings;
   if (!s) return;
 
-  const dotColors = {
-    gemini: '#10b981', // green
-    claude: '#8b5cf6', // purple
-    openai: '#3b82f6'  // blue
-  };
-
-  const MODEL_LABELS = {
-    'gemini-3.8-flash': 'Gemini 3.8 Flash High',
-    'gemini-3.7-flash': 'Gemini 3.7 Flash High',
-    'gemini-3.1-pro': 'Gemini 3.1 Pro',
-    'claude-sonnet-5': 'Claude Sonnet 5',
-    'claude-opus-5': 'Claude Opus 5',
-    'gpt-5.6-luna-max': 'GPT 5.6 Luna Max',
-    'gpt-5.6-sol': 'GPT 5.6 Sol Medium',
-    'gpt-6-astra': 'GPT 6 Astra Low'
-  };
-
-  let displayLabel = 'Gemini 3.8 Flash High';
-  if (s.activeProvider === 'claude') {
-    const m = s.claudeModel || 'claude-sonnet-5';
-    displayLabel = MODEL_LABELS[m] || `Claude (${m})`;
-  } else if (s.activeProvider === 'openai') {
-    const m = s.openaiModel || 'gpt-5.6-luna-max';
-    displayLabel = MODEL_LABELS[m] || `OpenAI (${m})`;
-  } else {
-    const m = s.geminiModel || 'gemini-3.8-flash';
-    displayLabel = MODEL_LABELS[m] || `Gemini (${m})`;
-  }
+  const providerInfo = MODEL_REGISTRY[s.activeProvider] || MODEL_REGISTRY.gemini;
+  const currentModelId = s[`${s.activeProvider}Model`] || providerInfo.defaultModel;
+  const displayLabel = getModelLabel(s.activeProvider, currentModelId);
 
   activeModelName.textContent = displayLabel;
-  providerDot.style.backgroundColor = dotColors[s.activeProvider] || '#10b981';
+  providerDot.style.backgroundColor = providerInfo.badgeColor;
+}
+
+function updateKeyPill(pillElem, keyVal, inputElem) {
+  if (keyVal && keyVal.trim()) {
+    pillElem.textContent = '등록됨 (' + maskApiKey(keyVal) + ')';
+    pillElem.classList.add('registered');
+    inputElem.placeholder = '키 변경 시에만 새 키를 입력하세요';
+  } else {
+    pillElem.textContent = '미등록';
+    pillElem.classList.remove('registered');
+    inputElem.placeholder = '새 API 키 입력';
+  }
 }
 
 function openSettingsModal() {
   const s = state.settings || {};
 
-  // 라디오 버튼 선택
   const radio = document.querySelector(`input[name="providerSelect"][value="${s.activeProvider || 'gemini'}"]`);
   if (radio) radio.checked = true;
 
-  cfgGeminiKey.value = s.geminiApiKey || '';
-  cfgGeminiModel.value = s.geminiModel || 'gemini-3.8-flash';
-  cfgClaudeKey.value = s.claudeApiKey || '';
-  cfgClaudeModel.value = s.claudeModel || 'claude-sonnet-5';
-  cfgOpenaiKey.value = s.openaiApiKey || '';
-  cfgOpenaiModel.value = s.openaiModel || 'gpt-5.6-luna-max';
+  cfgGeminiModel.value = s.geminiModel || MODEL_REGISTRY.gemini.defaultModel;
+  cfgClaudeModel.value = s.claudeModel || MODEL_REGISTRY.claude.defaultModel;
+  cfgOpenaiModel.value = s.openaiModel || MODEL_REGISTRY.openai.defaultModel;
+
+  // 키 입력창은 보안을 위해 비워두고 마스킹된 상태 배지 표시
+  cfgGeminiKey.value = '';
+  cfgClaudeKey.value = '';
+  cfgOpenaiKey.value = '';
+
+  updateKeyPill(geminiKeyStatus, s.geminiApiKey, cfgGeminiKey);
+  updateKeyPill(claudeKeyStatus, s.claudeApiKey, cfgClaudeKey);
+  updateKeyPill(openaiKeyStatus, s.openaiApiKey, cfgOpenaiKey);
+
+  chkPersistKeys.checked = Boolean(s.persistKeys);
 
   settingsModalOverlay.classList.remove('hidden');
 }
@@ -158,22 +171,29 @@ function closeSettingsModal() {
 
 async function handleSaveSettings() {
   const selectedProvider = document.querySelector('input[name="providerSelect"]:checked')?.value || 'gemini';
+  const prev = state.settings || {};
+
+  // 빈 값이면 기존 키 유지, 입력된 값이 있으면 교체
+  const newGeminiKey = cfgGeminiKey.value.trim() ? cfgGeminiKey.value.trim() : prev.geminiApiKey;
+  const newClaudeKey = cfgClaudeKey.value.trim() ? cfgClaudeKey.value.trim() : prev.claudeApiKey;
+  const newOpenaiKey = cfgOpenaiKey.value.trim() ? cfgOpenaiKey.value.trim() : prev.openaiApiKey;
 
   const newSettings = {
     activeProvider: selectedProvider,
-    geminiApiKey: cfgGeminiKey.value.trim(),
-    geminiModel: cfgGeminiModel.value.trim() || 'gemini-3.8-flash',
-    claudeApiKey: cfgClaudeKey.value.trim(),
-    claudeModel: cfgClaudeModel.value.trim() || 'claude-sonnet-5',
-    openaiApiKey: cfgOpenaiKey.value.trim(),
-    openaiModel: cfgOpenaiModel.value.trim() || 'gpt-5.6-luna-max'
+    geminiApiKey: newGeminiKey,
+    geminiModel: cfgGeminiModel.value || MODEL_REGISTRY.gemini.defaultModel,
+    claudeApiKey: newClaudeKey,
+    claudeModel: cfgClaudeModel.value || MODEL_REGISTRY.claude.defaultModel,
+    openaiApiKey: newOpenaiKey,
+    openaiModel: cfgOpenaiModel.value || MODEL_REGISTRY.openai.defaultModel,
+    persistKeys: chkPersistKeys.checked
   };
 
   await saveSettings(newSettings);
   state.settings = newSettings;
   updateHeaderBadge();
   closeSettingsModal();
-  showToast('AI 설정이 저장되었습니다.');
+  showToast('AI 설정이 안전하게 저장되었습니다.');
 }
 
 // Phase 1: Don Camillo Dialogue Flow
@@ -192,11 +212,13 @@ async function handleStartDialogue() {
   const active = await getActiveApiKeyAndModel();
   if (!active.apiKey) {
     openSettingsModal();
-    showToast(`먼저 ${active.provider} API 키를 설정해 주십시오.`);
+    showToast(`먼저 ${active.provider} API 키를 등록해 주십시오.`);
     return;
   }
 
-  showLoading(`돈 까밀로(${active.model})가 본문과 묵상 초안을 읽고 있습니다...`);
+  state.currentAbortController = new AbortController();
+  showLoading(`돈 까밀로(${active.model})가 본문과 초안을 읽고 있습니다...`);
+
   try {
     state.dialogueHistory = [];
     dialogueFeed.innerHTML = '';
@@ -212,7 +234,8 @@ async function handleStartDialogue() {
       apiKey: active.apiKey,
       model: active.model,
       systemInstruction: promptObj.systemInstruction,
-      contents: promptObj.contents
+      contents: promptObj.contents,
+      signal: state.currentAbortController.signal
     });
 
     state.dialogueHistory.push({
@@ -225,7 +248,11 @@ async function handleStartDialogue() {
 
     sectionDialogue.scrollIntoView({ behavior: 'smooth' });
   } catch (err) {
-    showToast(`오류: ${err.message}`);
+    if (err.name === 'AbortError') {
+      showToast('요청이 취소되었습니다.');
+    } else {
+      showToast(`오류: ${err.message}`);
+    }
   } finally {
     hideLoading();
   }
@@ -249,7 +276,9 @@ async function handleSendReply() {
     parts: [{ text: replyText }]
   });
 
+  state.currentAbortController = new AbortController();
   showLoading(`돈 까밀로(${active.model})가 신학적 사유를 되묻고 있습니다...`);
+
   try {
     const promptObj = buildDonCamilloPrompt({
       scripture: state.scripture,
@@ -262,7 +291,8 @@ async function handleSendReply() {
       apiKey: active.apiKey,
       model: active.model,
       systemInstruction: promptObj.systemInstruction,
-      contents: promptObj.contents
+      contents: promptObj.contents,
+      signal: state.currentAbortController.signal
     });
 
     state.dialogueHistory.push({
@@ -272,7 +302,11 @@ async function handleSendReply() {
 
     appendDialogueBubble('돈 까밀로 (Don Camillo)', response, true);
   } catch (err) {
-    showToast(`오류: ${err.message}`);
+    if (err.name === 'AbortError') {
+      showToast('요청이 취소되었습니다.');
+    } else {
+      showToast(`오류: ${err.message}`);
+    }
   } finally {
     hideLoading();
   }
@@ -286,7 +320,9 @@ async function handleSynthesizeEssay() {
     return;
   }
 
+  state.currentAbortController = new AbortController();
   showLoading(`C.S. Lewis × Eugene Peterson 스타일로 완성 에세이를 집필 중입니다 (${active.model})...`);
+
   try {
     const promptObj = buildSynthesisPrompt({
       scripture: state.scripture,
@@ -302,7 +338,8 @@ async function handleSynthesizeEssay() {
       model: active.model,
       systemInstruction: promptObj.systemInstruction,
       contents: promptObj.contents,
-      isJson: true
+      isJson: true,
+      signal: state.currentAbortController.signal
     });
 
     let data;
@@ -336,15 +373,18 @@ async function handleSynthesizeEssay() {
     }
 
     // Filename preview
-    const today = new Date().toISOString().slice(0, 10);
-    const targetFilename = generateFilename(today, state.book, state.chapter);
+    const targetFilename = generateFilename(null, state.book, state.chapter);
     filenamePreview.textContent = targetFilename;
 
     sectionResult.classList.remove('hidden');
     sectionResult.scrollIntoView({ behavior: 'smooth' });
     showToast('완성 에세이가 생성되었습니다.');
   } catch (err) {
-    showToast(`에세이 생성 오류: ${err.message}`);
+    if (err.name === 'AbortError') {
+      showToast('요청이 취소되었습니다.');
+    } else {
+      showToast(`에세이 생성 오류: ${err.message}`);
+    }
   } finally {
     hideLoading();
   }
@@ -357,9 +397,14 @@ function handleExportMd() {
     return;
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  const targetFilename = generateFilename(today, state.book, state.chapter);
+  // 내보내기 전 실시간 린트 재검사
+  const lintCheck = lintMarkdown(currentContent);
+  if (!lintCheck.valid) {
+    const confirmExport = confirm(`마크다운 서식에 주의 항목이 있습니다:\n- ${lintCheck.errors.join('\n- ')}\n\n그래도 다운로드하시겠습니까?`);
+    if (!confirmExport) return;
+  }
 
+  const targetFilename = generateFilename(null, state.book, state.chapter);
   triggerDownload(targetFilename, currentContent);
   showToast(`다운로드 시작: ${targetFilename}`);
 }
@@ -386,11 +431,29 @@ btnCloseSettingsModal.addEventListener('click', closeSettingsModal);
 btnCancelSettings.addEventListener('click', closeSettingsModal);
 btnSaveSettings.addEventListener('click', handleSaveSettings);
 
+btnCancelRequest.addEventListener('click', () => {
+  if (state.currentAbortController) {
+    state.currentAbortController.abort();
+  }
+});
+
 btnStartDialogue.addEventListener('click', handleStartDialogue);
 btnSendReply.addEventListener('click', handleSendReply);
 btnSynthesizeEssay.addEventListener('click', handleSynthesizeEssay);
 btnExportMd.addEventListener('click', handleExportMd);
 btnCopyClipboard.addEventListener('click', handleCopyClipboard);
+
+// 에디터 수정 시 실시간 린트 재검사
+resultMarkdown.addEventListener('input', () => {
+  const lintResult = lintMarkdown(resultMarkdown.value);
+  if (lintResult.valid) {
+    lintBadge.className = 'badge badge-success';
+    lintBadge.textContent = '✅ 마크다운 린트 통과';
+  } else {
+    lintBadge.className = 'badge';
+    lintBadge.textContent = `⚠️ 린트 주의: ${lintResult.errors.length}건`;
+  }
+});
 
 inputUserReply.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {

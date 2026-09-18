@@ -13,7 +13,7 @@
    - **Google Gemini**:
      1. `gemini-3.8-flash` (1순위 권장 · 무료 티어 · High Reasoning)
      2. `gemini-3.7-flash` (High Reasoning)
-     3. `gemini-3.1-pro`
+     3. `gemini-3.1-pro-preview`
    - **Anthropic Claude**:
      1. `claude-sonnet-5` (1순위 권장 · 최고 수준 문학적 사유)
      2. `claude-opus-5`
@@ -33,22 +33,40 @@
 5. **마크다운 린트 무결성 검증 및 Export as MD**
    - 이탤릭(`*text*`, `_text_`) 일체 배제
    - 엠대시(`—`, `–`) 배제
-   - 클릭 시 `yyyy-mm-dd_성경영문약어+chapter.md` (예: `2026-09-18_lev18.md`)로 자동 다운로드 및 클립보드 원클릭 복사
+   - 로컬 날짜 기준 `yyyy-mm-dd_성경영문약어+chapter.md` (예: `2026-09-18_lev18.md`)로 자동 다운로드 및 클립보드 원클릭 복사
 
 ---
 
 ## 🛠️ 설치 및 사용 방법
 
-### 1. Chrome에 확장 프로그램 새로고침
+### 1. Chrome에 확장 프로그램 로드 / 새로고침
 1. 구글 크롬 브라우저의 `chrome://extensions` 페이지로 이동합니다.
-2. 본 확장 프로그램(**성서 묵상 동반자**)의 **새로고침(🔄)** 아이콘을 클릭합니다.
+2. 우측 상단의 **[개발자 모드]**를 켭니다.
+3. **[압축해제된 확장 프로그램을 로드합니다]**를 누르고 본 프로젝트 폴더를 선택합니다. (이미 로드된 경우 새로고침 🔄 클릭)
 
 ### 2. AI 엔진 및 API 키 설정
 1. 브라우저 툴바의 **[성서 묵상 패널 열기]** 아이콘을 클릭합니다.
 2. 사이드 패널 상단의 **모델 배지** 또는 **설정(⚙️)** 버튼을 누릅니다.
 3. 원하는 기본 AI 엔진을 선택하고 보유한 API 키를 입력합니다:
-   - **Google Gemini**: Google AI Studio의 무료 키(`AIzaSy...`) 입력 (기본값: `gemini-3.8-flash`)
-   - **Anthropic Claude**: Claude API 키(`sk-ant-...`) 입력 (기본값: `claude-sonnet-5`)
-   - **OpenAI**: OpenAI API 키(`sk-...`) 입력 (기본값: `gpt-5.6-luna-max`)
+   - **Google Gemini**: Google AI Studio의 무료 키(`AIzaSy...`) 입력
+   - **Anthropic Claude**: Claude API 키(`sk-ant-...`) 입력
+   - **OpenAI**: OpenAI API 키(`sk-...`) 입력
 4. **[저장하기]**를 누르면 즉시 설정이 반영됩니다.
 5. 본문 구절과 1차 초안 메모를 입력한 뒤 **[🎭 돈 까밀로와 대화 시작]**을 눌러 묵상을 진행합니다.
+
+---
+
+## 🔒 보안 및 개인정보 보호 (BYOK)
+
+- **개발자 서버 Zero**: 본 확장 프로그램은 중앙 서버나 프록시가 전혀 없으며, 사용자의 API 키와 묵상 본문은 오직 사용자가 선택한 AI 공급자의 공식 API로만 직접 암호화 전송됩니다.
+- **저장소 정책**: 기본적으로 브라우저 종료 시 키가 메모리에서 자동 소멸(`chrome.storage.session`)되며, 사용자가 명시적으로 선택한 경우에만 로컬 브라우저 프로필에 저장됩니다.
+- **권한 최소화**: 외부 파일 시스템 접근이나 불필요한 권한을 일체 요구하지 않으며 오직 `sidePanel`과 `storage` 권한만 사용합니다.
+
+자세한 내용은 [개인정보 처리방침 (PRIVACY.md)](PRIVACY.md) 및 [보안 정책 (SECURITY.md)](SECURITY.md)을 참조하십시오.
+
+---
+
+## 📄 라이선스 및 기여
+
+- 라이선스: [MIT License](LICENSE)
+- 기여 가이드: [기여 방법 안내 (CONTRIBUTING.md)](CONTRIBUTING.md)

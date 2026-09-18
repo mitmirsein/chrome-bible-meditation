@@ -1,23 +1,41 @@
 // Unified Multi-Provider AI Client (Gemini, Claude, OpenAI)
+// Secure header-based authentication & AbortController support
 
-export async function callAI({ provider, apiKey, model, systemInstruction, contents, isJson = false }) {
-  if (!apiKey) {
+const REQUEST_TIMEOUT_MS = 60000; // 60초 타임아웃
+
+export async function callAI({ provider, apiKey, model, systemInstruction, contents, isJson = false, signal }) {
+  if (!apiKey || !apiKey.trim()) {
     const names = { gemini: 'Google Gemini', claude: 'Anthropic Claude', openai: 'OpenAI' };
     throw new Error(`${names[provider] || provider} API 키가 등록되지 않았습니다. 상단 설정(⚙️)에서 키를 입력해 주십시오.`);
   }
 
-  if (provider === 'claude') {
-    return callClaude({ apiKey, model, systemInstruction, contents, isJson });
-  } else if (provider === 'openai') {
-    return callOpenAI({ apiKey, model, systemInstruction, contents, isJson });
-  } else {
-    return callGemini({ apiKey, model, systemInstruction, contents, isJson });
+  // 타임아웃 컨트롤러 결합
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => {
+    timeoutController.abort(new Error('요청 시간이 초과되었습니다 (60초 제한).'));
+  }, REQUEST_TIMEOUT_MS);
+
+  // 외부 signal이 제공된 경우 연결
+  if (signal) {
+    signal.addEventListener('abort', () => timeoutController.abort(signal.reason));
+  }
+
+  try {
+    if (provider === 'claude') {
+      return await callClaude({ apiKey, model, systemInstruction, contents, isJson, signal: timeoutController.signal });
+    } else if (provider === 'openai') {
+      return await callOpenAI({ apiKey, model, systemInstruction, contents, isJson, signal: timeoutController.signal });
+    } else {
+      return await callGemini({ apiKey, model, systemInstruction, contents, isJson, signal: timeoutController.signal });
+    }
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
-// 1. Google Gemini (3.8 Flash High / 3.7 Flash High / 3.1 Pro)
-async function callGemini({ apiKey, model = 'gemini-3.8-flash', systemInstruction, contents, isJson }) {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
+// 1. Google Gemini (x-goog-api-key 헤더 전송: URL 쿼리 파라미터 노출 방지)
+async function callGemini({ apiKey, model = 'gemini-3.8-flash', systemInstruction, contents, isJson, signal }) {
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
   const isHighThinking = model.includes('3.8-flash') || model.includes('3.7-flash');
 
@@ -47,13 +65,18 @@ async function callGemini({ apiKey, model = 'gemini-3.8-flash', systemInstructio
 
   const res = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey.trim()
+    },
+    body: JSON.stringify(body),
+    signal
   });
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `Gemini API 오류 (HTTP ${res.status})`);
+    const rawMsg = errorData.error?.message || `HTTP ${res.status} 오류`;
+    throw new Error(cleanErrorMessage(rawMsg, apiKey));
   }
 
   const data = await res.json();
@@ -62,7 +85,7 @@ async function callGemini({ apiKey, model = 'gemini-3.8-flash', systemInstructio
 }
 
 // 2. Anthropic Claude (Sonnet 5 / Opus 5)
-async function callClaude({ apiKey, model = 'claude-sonnet-5', systemInstruction, contents, isJson }) {
+async function callClaude({ apiKey, model = 'claude-sonnet-5', systemInstruction, contents, isJson, signal }) {
   const endpoint = 'https://api.anthropic.com/v1/messages';
 
   const messages = contents.map(item => ({
@@ -91,12 +114,14 @@ async function callClaude({ apiKey, model = 'claude-sonnet-5', systemInstruction
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true'
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal
   });
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `Claude API 오류 (HTTP ${res.status})`);
+    const rawMsg = errorData.error?.message || `HTTP ${res.status} 오류`;
+    throw new Error(cleanErrorMessage(rawMsg, apiKey));
   }
 
   const data = await res.json();
@@ -105,7 +130,7 @@ async function callClaude({ apiKey, model = 'claude-sonnet-5', systemInstruction
 }
 
 // 3. OpenAI (5.6 Luna Max / 5.6 Sol Medium / 6 Astra Low)
-async function callOpenAI({ apiKey, model = 'gpt-5.6-luna-max', systemInstruction, contents, isJson }) {
+async function callOpenAI({ apiKey, model = 'gpt-5.6-luna-max', systemInstruction, contents, isJson, signal }) {
   const endpoint = 'https://api.openai.com/v1/chat/completions';
 
   const messages = [];
@@ -127,7 +152,6 @@ async function callOpenAI({ apiKey, model = 'gpt-5.6-luna-max', systemInstructio
     max_tokens: 3500
   };
 
-  // 모델별 추론 effort 파라미터 매핑
   if (model.includes('sol')) {
     body.reasoning_effort = 'medium';
   } else if (model.includes('astra')) {
@@ -144,14 +168,25 @@ async function callOpenAI({ apiKey, model = 'gpt-5.6-luna-max', systemInstructio
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey.trim()}`
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal
   });
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `OpenAI API 오류 (HTTP ${res.status})`);
+    const rawMsg = errorData.error?.message || `HTTP ${res.status} 오류`;
+    throw new Error(cleanErrorMessage(rawMsg, apiKey));
   }
 
   const data = await res.json();
   return data.choices?.[0]?.message?.content || '';
+}
+
+// 에러 메시지 내 API 키 유출 방지 새니타이저
+export function cleanErrorMessage(msg, apiKey) {
+  if (!msg) return '알 수 없는 오류가 발생했습니다.';
+  if (apiKey && apiKey.length > 5) {
+    return msg.replaceAll(apiKey.trim(), '[REDACTED_KEY]');
+  }
+  return msg;
 }

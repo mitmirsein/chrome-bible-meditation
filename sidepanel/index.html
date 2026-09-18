@@ -25,6 +25,14 @@
   </header>
 
   <main class="main-container">
+    <!-- 개인정보 및 데이터 전송 고지 배너 -->
+    <div class="privacy-notice-banner">
+      <span class="notice-icon">🛡️</span>
+      <p class="notice-text">
+        <strong>BYOK 보안 안내:</strong> 본문과 대화 내용은 개발자 서버를 거치지 않고 선택하신 AI 공급자(Google, Anthropic, OpenAI)의 공식 API로 직접 암호화 전송됩니다.
+      </p>
+    </div>
+
     <!-- 섹션 1: 본문 및 1차 초안 묵상 메모 -->
     <section class="card section-draft" id="sectionDraft">
       <div class="card-header">
@@ -110,7 +118,7 @@
     </section>
   </main>
 
-  <!-- AI 설정 모달 다이얼로그 (Multi-Provider) -->
+  <!-- AI 설정 모달 다이얼로그 (Multi-Provider & Storage Policy) -->
   <div class="modal-overlay hidden" id="settingsModalOverlay">
     <div class="modal-card">
       <div class="modal-header">
@@ -141,15 +149,18 @@
         <!-- Google Gemini 설정 -->
         <div class="provider-config-section" id="cfgSectionGemini">
           <div class="form-group">
-            <label for="cfgGeminiKey">Google Gemini API Key (AIzaSy...)</label>
-            <input type="password" id="cfgGeminiKey" placeholder="Google AI Studio 무료 키" autocomplete="off">
+            <div class="label-with-action">
+              <label for="cfgGeminiKey">Google Gemini API Key</label>
+              <span class="key-status-pill" id="geminiKeyStatus">미등록</span>
+            </div>
+            <input type="password" id="cfgGeminiKey" placeholder="새 키 입력 (AIzaSy...)" autocomplete="off">
           </div>
           <div class="form-group">
             <label for="cfgGeminiModel">모델 선택</label>
             <select id="cfgGeminiModel" class="form-select">
               <option value="gemini-3.8-flash" selected>1. Gemini 3.8 Flash High (권장)</option>
               <option value="gemini-3.7-flash">2. Gemini 3.7 Flash High</option>
-              <option value="gemini-3.1-pro">3. Gemini 3.1 Pro</option>
+              <option value="gemini-3.1-pro-preview">3. Gemini 3.1 Pro Preview</option>
             </select>
           </div>
         </div>
@@ -157,8 +168,11 @@
         <!-- Anthropic Claude 설정 -->
         <div class="provider-config-section" id="cfgSectionClaude">
           <div class="form-group">
-            <label for="cfgClaudeKey">Anthropic Claude API Key (sk-ant-...)</label>
-            <input type="password" id="cfgClaudeKey" placeholder="sk-ant-api03-..." autocomplete="off">
+            <div class="label-with-action">
+              <label for="cfgClaudeKey">Anthropic Claude API Key</label>
+              <span class="key-status-pill" id="claudeKeyStatus">미등록</span>
+            </div>
+            <input type="password" id="cfgClaudeKey" placeholder="새 키 입력 (sk-ant-...)" autocomplete="off">
           </div>
           <div class="form-group">
             <label for="cfgClaudeModel">모델 선택</label>
@@ -172,8 +186,11 @@
         <!-- OpenAI 설정 -->
         <div class="provider-config-section" id="cfgSectionOpenai">
           <div class="form-group">
-            <label for="cfgOpenaiKey">OpenAI API Key (sk-proj-...)</label>
-            <input type="password" id="cfgOpenaiKey" placeholder="sk-..." autocomplete="off">
+            <div class="label-with-action">
+              <label for="cfgOpenaiKey">OpenAI API Key</label>
+              <span class="key-status-pill" id="openaiKeyStatus">미등록</span>
+            </div>
+            <input type="password" id="cfgOpenaiKey" placeholder="새 키 입력 (sk-...)" autocomplete="off">
           </div>
           <div class="form-group">
             <label for="cfgOpenaiModel">모델 선택</label>
@@ -184,18 +201,33 @@
             </select>
           </div>
         </div>
+
+        <hr class="modal-divider">
+
+        <!-- 키 저장 정책 (Session 기본 / Local 영구 보관 선택) -->
+        <div class="storage-policy-box">
+          <label class="checkbox-label">
+            <input type="checkbox" id="chkPersistKeys">
+            <span><strong>이 기기에 API 키 기억하기</strong></span>
+          </label>
+          <p class="policy-help-text">
+            체크 시 브라우저를 닫아도 키가 유지됩니다(로컬 저장).<br>
+            체크 해제 시(기본) 브라우저를 닫으면 키가 메모리에서 자동 삭제됩니다.
+          </p>
+        </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline" id="btnCancelSettings">취소</button>
+        <button type="button" class="btn btn-outline" id="btnCancelSettings">닫기</button>
         <button type="button" class="btn btn-primary" id="btnSaveSettings">저장하기</button>
       </div>
     </div>
   </div>
 
-  <!-- 로딩 오버레이 -->
+  <!-- 로딩 오버레이 & 취소 버튼 -->
   <div class="loading-overlay hidden" id="loadingOverlay">
     <div class="spinner"></div>
     <p class="loading-text" id="loadingText">사유를 심화하고 있습니다...</p>
+    <button type="button" class="btn btn-outline btn-cancel-req" id="btnCancelRequest">요청 취소</button>
   </div>
 
   <!-- 토스트 알림 -->

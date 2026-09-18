@@ -1,11 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateFilename, formatMeditationMarkdown, lintMarkdown } from '../sidepanel/exporter.js';
+import {
+  getLocalIsoDate,
+  sanitizeFilenamePart,
+  generateFilename,
+  formatMeditationMarkdown,
+  lintMarkdown
+} from '../sidepanel/exporter.js';
 
-test('generateFilename formats correctly', () => {
+test('getLocalIsoDate returns formatted local YYYY-MM-DD', () => {
+  const fixedDate = new Date(2026, 8, 18, 9, 30); // 2026-09-18 (월은 0-indexed)
+  assert.equal(getLocalIsoDate(fixedDate), '2026-09-18');
+
+  const now = new Date();
+  const res = getLocalIsoDate(now);
+  assert.match(res, /^\d{4}-\d{2}-\d{2}$/);
+});
+
+test('sanitizeFilenamePart cleans illegal filesystem characters and whitespace', () => {
+  assert.equal(sanitizeFilenamePart('Lev:18/test?*'), 'lev18test');
+  assert.equal(sanitizeFilenamePart('  1 Corinthians  '), '1corinthians');
+  assert.equal(sanitizeFilenamePart('<Script>|File"'), 'scriptfile');
+  assert.equal(sanitizeFilenamePart(''), '');
+});
+
+test('generateFilename formats correctly and sanitizes special characters', () => {
   assert.equal(generateFilename('2026-09-18', 'Lev', '18'), '2026-09-18_lev18.md');
   assert.equal(generateFilename('2026-09-18', 'GEN', '1'), '2026-09-18_gen1.md');
   assert.equal(generateFilename('2026-09-18', '1Cor', '13'), '2026-09-18_1cor13.md');
+  assert.equal(generateFilename('2026-09-18', 'Lev:18', '18?'), '2026-09-18_lev1818.md');
 });
 
 test('lintMarkdown detects illegal italics and em-dashes', () => {
@@ -13,6 +36,18 @@ test('lintMarkdown detects illegal italics and em-dashes', () => {
   const result = lintMarkdown(invalidText);
   assert.equal(result.valid, false);
   assert.equal(result.errors.length, 2);
+});
+
+test('lintMarkdown detects unsafe scripts or javascript URI', () => {
+  const xssText = '본문 내용 <script>alert("XSS")</script>';
+  const result1 = lintMarkdown(xssText);
+  assert.equal(result1.valid, false);
+  assert.match(result1.errors[0], /보안 위협/);
+
+  const uriText = '참조 링크: [Click](javascript:stealData())';
+  const result2 = lintMarkdown(uriText);
+  assert.equal(result2.valid, false);
+  assert.match(result2.errors[0], /보안 위협/);
 });
 
 test('lintMarkdown passes clean markdown', () => {
@@ -42,3 +77,4 @@ test('formatMeditationMarkdown structures 3-part layout correctly', () => {
   assert.match(output, /### 빛과 어둠의 분리 \(창세기 1장\)/);
   assert.match(output, /첫째 날의 말씀이 시작됩니다\./);
 });
+
