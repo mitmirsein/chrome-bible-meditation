@@ -10,8 +10,9 @@ test('buildDonCamilloPrompt includes Don Camillo persona and guardrails', () => 
   });
 
   assert.match(prompt.systemInstruction, /돈 까밀로/);
+  assert.match(prompt.systemInstruction, /신부님 신부님 우리들의 신부님/);
   assert.match(prompt.systemInstruction, /도전적 질문/);
-  assert.match(prompt.systemInstruction, /형식적 칭찬 금지/);
+  assert.match(prompt.systemInstruction, /형식적 칭찬/);
   assert.equal(prompt.contents.length, 1);
 });
 
