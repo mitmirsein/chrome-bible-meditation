@@ -9,11 +9,19 @@
 1. **원페이지 스크롤형 사이드 패널 (Side Panel API)**
    - 브라우저 우측에 도킹되어 웹 서핑이나 성경 읽기 탭과 나란히 작업 가능
    - 1차 본문/초안 작성 ➔ 신학적 대화 ➔ 완성 에세이 및 내보내기가 단일 스크롤 캔버스로 이어지는 직관적 UI
-2. **트리플 AI 엔진 지원 (Multi-Provider)**
-   - **Google Gemini**: `gemini-3.8-flash` (100% 무료 티어 지원, thinking budget High)
-   - **Anthropic Claude**: `claude-sonnet-5` (탁월한 문학적 표현력 및 신학적 사유)
-   - **OpenAI**: `gpt-5.6-luna-max` (강력한 추론 및 안정적 구조화)
-   - 상단 헤더 배지 클릭 한 번으로 엔진을 자유롭게 전환 가능
+2. **트리플 AI 엔진 지원 (Multi-Provider 라인업)**
+   - **Google Gemini**:
+     1. `gemini-3.8-flash` (1순위 권장 · 무료 티어 · High Reasoning)
+     2. `gemini-3.7-flash` (High Reasoning)
+     3. `gemini-3.1-pro`
+   - **Anthropic Claude**:
+     1. `claude-sonnet-5` (1순위 권장 · 최고 수준 문학적 사유)
+     2. `claude-opus-5`
+   - **OpenAI**:
+     1. `gpt-5.6-luna-max` (1순위 권장 · 고성능/가성비)
+     2. `gpt-5.6-sol` (Medium Reasoning)
+     3. `gpt-6-astra` (Low Reasoning)
+   - 상단 헤더 배지 클릭 한 번으로 엔진 및 모델을 자유롭게 전환 가능
 3. **신학적 대화 프로토콜 (Phase 1: 돈 까밀로 페르소나)**
    - 형식적 칭찬과 상투적 감탄 배제
    - 본문 텍스트의 역사적·실존적 맥락을 파고드는 날카롭고 도전적인 질문 제시

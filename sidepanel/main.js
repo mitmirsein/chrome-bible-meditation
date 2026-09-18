@@ -108,13 +108,27 @@ function updateHeaderBadge() {
     openai: '#3b82f6'  // blue
   };
 
-  let displayLabel = 'Gemini 3.8 Flash';
+  const MODEL_LABELS = {
+    'gemini-3.8-flash': 'Gemini 3.8 Flash High',
+    'gemini-3.7-flash': 'Gemini 3.7 Flash High',
+    'gemini-3.1-pro': 'Gemini 3.1 Pro',
+    'claude-sonnet-5': 'Claude Sonnet 5',
+    'claude-opus-5': 'Claude Opus 5',
+    'gpt-5.6-luna-max': 'GPT 5.6 Luna Max',
+    'gpt-5.6-sol': 'GPT 5.6 Sol Medium',
+    'gpt-6-astra': 'GPT 6 Astra Low'
+  };
+
+  let displayLabel = 'Gemini 3.8 Flash High';
   if (s.activeProvider === 'claude') {
-    displayLabel = `Claude (${s.claudeModel || 'claude-sonnet-5'})`;
+    const m = s.claudeModel || 'claude-sonnet-5';
+    displayLabel = MODEL_LABELS[m] || `Claude (${m})`;
   } else if (s.activeProvider === 'openai') {
-    displayLabel = `OpenAI (${s.openaiModel || 'gpt-5.6-luna-max'})`;
+    const m = s.openaiModel || 'gpt-5.6-luna-max';
+    displayLabel = MODEL_LABELS[m] || `OpenAI (${m})`;
   } else {
-    displayLabel = `Gemini (${s.geminiModel || 'gemini-3.8-flash'})`;
+    const m = s.geminiModel || 'gemini-3.8-flash';
+    displayLabel = MODEL_LABELS[m] || `Gemini (${m})`;
   }
 
   activeModelName.textContent = displayLabel;

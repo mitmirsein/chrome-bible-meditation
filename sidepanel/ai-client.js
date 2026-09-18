@@ -15,20 +15,25 @@ export async function callAI({ provider, apiKey, model, systemInstruction, conte
   }
 }
 
-// 1. Google Gemini (gemini-3.8-flash)
+// 1. Google Gemini (3.8 Flash High / 3.7 Flash High / 3.1 Pro)
 async function callGemini({ apiKey, model = 'gemini-3.8-flash', systemInstruction, contents, isJson }) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
+
+  const isHighThinking = model.includes('3.8-flash') || model.includes('3.7-flash');
 
   const body = {
     contents,
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 3500,
-      thinkingConfig: {
-        thinkingBudget: 2048
-      }
+      maxOutputTokens: 3500
     }
   };
+
+  if (isHighThinking) {
+    body.generationConfig.thinkingConfig = {
+      thinkingBudget: 2048
+    };
+  }
 
   if (systemInstruction) {
     body.systemInstruction = {
@@ -56,11 +61,10 @@ async function callGemini({ apiKey, model = 'gemini-3.8-flash', systemInstructio
   return text;
 }
 
-// 2. Anthropic Claude (claude-sonnet-5)
+// 2. Anthropic Claude (Sonnet 5 / Opus 5)
 async function callClaude({ apiKey, model = 'claude-sonnet-5', systemInstruction, contents, isJson }) {
   const endpoint = 'https://api.anthropic.com/v1/messages';
 
-  // Gemini contents -> Claude messages 변환
   const messages = contents.map(item => ({
     role: item.role === 'model' ? 'assistant' : 'user',
     content: item.parts?.map(p => p.text).join('\n') || ''
@@ -100,7 +104,7 @@ async function callClaude({ apiKey, model = 'claude-sonnet-5', systemInstruction
   return text;
 }
 
-// 3. OpenAI (gpt-5.6-luna-max)
+// 3. OpenAI (5.6 Luna Max / 5.6 Sol Medium / 6 Astra Low)
 async function callOpenAI({ apiKey, model = 'gpt-5.6-luna-max', systemInstruction, contents, isJson }) {
   const endpoint = 'https://api.openai.com/v1/chat/completions';
 
@@ -122,6 +126,13 @@ async function callOpenAI({ apiKey, model = 'gpt-5.6-luna-max', systemInstructio
     temperature: 0.7,
     max_tokens: 3500
   };
+
+  // 모델별 추론 effort 파라미터 매핑
+  if (model.includes('sol')) {
+    body.reasoning_effort = 'medium';
+  } else if (model.includes('astra')) {
+    body.reasoning_effort = 'low';
+  }
 
   if (isJson) {
     body.response_format = { type: 'json_object' };

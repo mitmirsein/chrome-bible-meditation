@@ -1,7 +1,24 @@
 // Multi-Provider Settings & API Key Manager
 
+export const AVAILABLE_MODELS = {
+  gemini: [
+    { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash High (권장)', thinking: 'high' },
+    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash High', thinking: 'high' },
+    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro', thinking: 'standard' }
+  ],
+  claude: [
+    { id: 'claude-sonnet-5', name: 'Claude Sonnet 5 (권장)' },
+    { id: 'claude-opus-5', name: 'Claude Opus 5' }
+  ],
+  openai: [
+    { id: 'gpt-5.6-luna-max', name: 'GPT 5.6 Luna Max (권장)' },
+    { id: 'gpt-5.6-sol', name: 'GPT 5.6 Sol Medium', effort: 'medium' },
+    { id: 'gpt-6-astra', name: 'GPT 6 Astra Low', effort: 'low' }
+  ]
+};
+
 export const DEFAULT_SETTINGS = {
-  activeProvider: 'gemini', // 'gemini' | 'claude' | 'openai'
+  activeProvider: 'gemini',
   geminiApiKey: '',
   claudeApiKey: '',
   openaiApiKey: '',
@@ -16,7 +33,6 @@ export async function getSettings() {
       try {
         const raw = localStorage.getItem('bible_meditation_settings');
         const parsed = raw ? JSON.parse(raw) : {};
-        // 구버전 호환 (gemini_api_key)
         if (!parsed.geminiApiKey) {
           parsed.geminiApiKey = localStorage.getItem('gemini_api_key') || '';
         }
@@ -51,14 +67,13 @@ export async function saveSettings(newSettings) {
   });
 }
 
-// 편의 헬퍼
 export async function getActiveApiKeyAndModel() {
   const s = await getSettings();
   if (s.activeProvider === 'claude') {
-    return { provider: 'claude', apiKey: s.claudeApiKey, model: s.claudeModel };
+    return { provider: 'claude', apiKey: s.claudeApiKey, model: s.claudeModel || 'claude-sonnet-5' };
   } else if (s.activeProvider === 'openai') {
-    return { provider: 'openai', apiKey: s.openaiApiKey, model: s.openaiModel };
+    return { provider: 'openai', apiKey: s.openaiApiKey, model: s.openaiModel || 'gpt-5.6-luna-max' };
   } else {
-    return { provider: 'gemini', apiKey: s.geminiApiKey, model: s.geminiModel };
+    return { provider: 'gemini', apiKey: s.geminiApiKey, model: s.geminiModel || 'gemini-3.8-flash' };
   }
 }

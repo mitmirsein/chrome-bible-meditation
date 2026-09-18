@@ -226,6 +226,8 @@ body {
 }
 
 input[type="text"],
+input[type="password"],
+select.form-select,
 textarea {
   width: 100%;
   background-color: var(--bg-input);
@@ -240,6 +242,8 @@ textarea {
 }
 
 input[type="text"]:focus,
+input[type="password"]:focus,
+select.form-select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--border-focus);
